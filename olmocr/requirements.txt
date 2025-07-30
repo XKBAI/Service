@@ -1,0 +1,62 @@
+# Core web service dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+pydantic>=2.0.0
+
+# OCR和AI依赖 - 简化版本避免依赖冲突
+# 注意：PyTorch将在Dockerfile中安装CUDA版本
+transformers==4.46.2
+
+# SGLang - 使用基础版本，避免复杂依赖
+sglang==0.4.6.post4
+
+# 必需的运行时依赖
+orjson
+uvloop
+
+# PDF和图像处理
+pypdf>=5.2.0
+pypdfium2
+Pillow
+img2pdf
+
+# 语言和文本处理
+lingua-language-detector
+ftfy
+bleach
+markdown2
+
+# 文件和数据处理
+cached-path
+smart_open
+filelock
+requests
+zstandard
+boto3
+httpx
+
+# 基础ML工具 - 最小化版本
+cryptography
+einops
+accelerate
+datasets
+peft
+omegaconf
+pyzmq
+
+# 系统工具
+psutil
+aiofiles
+
+# 基础AI库 - 避免复杂依赖
+huggingface-hub
+safetensors
+numpy
+
+# Optional development dependencies
+# ruff
+# mypy  
+# black
+# isort
+# pytest 

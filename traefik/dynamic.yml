@@ -1,0 +1,163 @@
+# traefik/dynamic.yml - 正确的动态配置文件
+
+http:
+  # 服务定义
+  services:
+    auth-error-service:
+      loadBalancer:
+        servers:
+          - url: "http://AUTH:9000"
+
+  # 中间件定义
+  middlewares:
+    # 🔥 ForwardAuth 认证中间件
+    global-auth:
+      forwardAuth:
+        address: "http://AUTH:9000/validate"
+        authRequestHeaders:
+          - "Authorization"
+          - "Cookie"
+          - "X-Forwarded-For"
+          - "X-Forwarded-Host"
+          - "X-Forwarded-Proto"
+          - "X-Real-IP"
+          - "X-Forwarded-Uri"
+        authResponseHeaders:
+          - "X-User"
+          - "X-User-Role"
+          - "X-Auth-Status"
+        trustForwardHeader: true
+
+    # 🔥 CORS 中间件
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+          - "PATCH"
+          - "OPTIONS"
+        accessControlAllowHeaders:
+          - "Content-Type"
+          - "Authorization"
+          - "X-API-Key"
+          - "X-Requested-With"
+          - "Accept"
+          - "Origin"
+          - "Cache-Control"
+        accessControlAllowOriginList:
+          - "https://localhost:8443"
+          - "https://xkb.744204541.xyz:8443"
+          - "http://localhost:3000"
+          - "*"
+        accessControlMaxAge: 86400
+        accessControlAllowCredentials: true
+
+    # 🔥 安全头部中间件
+    secure-headers:
+      headers:
+        frameDeny: false
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+          X-Forwarded-Port: "8443"
+        customResponseHeaders:
+          X-Frame-Options: "SAMEORIGIN"
+          X-Content-Type-Options: "nosniff"
+          X-XSS-Protection: "1; mode=block"
+          Strict-Transport-Security: "max-age=31536000; includeSubDomains; preload"
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+          - "X-Forwarded-For"
+          - "X-Forwarded-Proto"
+          - "X-Real-IP"
+
+    # 🔥 限流中间件
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 200
+        period: 60s
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+            excludedIPs:
+              - "127.0.0.1"
+              - "::1"
+              - "172.16.0.0/12"
+
+    # 🔥 Dashboard 基础认证中间件
+    dashboard-auth:
+      basicAuth:
+        users:
+          # admin:admin123
+          - "admin:$2y$10$K.9qKTJWmBYVJ8hgKtPbluBF6bJXsXKb8fNDJ7J1h2VG3ysMKW1nO"
+        realm: "Traefik Dashboard"
+        removeHeader: true
+
+    # 🔥 重定向到 HTTPS
+    redirect-to-https:
+      redirectScheme:
+        scheme: "https"
+        port: "8443"
+        permanent: true
+
+    # 🔥 错误页面中间件
+    auth-errors:
+      errors:
+        status:
+          - "401"
+          - "403"
+        service: auth-error-service
+        query: "/login?redirect={uri}"
+
+    # ==================== 中间件组合 ====================
+
+    # 🔥 受保护的 API 服务
+    protected-api:
+      chain:
+        middlewares:
+          - "auth-errors"
+          - "global-auth"
+          - "cors-headers"
+
+    # 🔥 受保护的普通服务
+    protected-service:
+      chain:
+        middlewares:
+          - "global-auth"
+          - "cors-headers"
+          - "rate-limit"
+
+    # 🔥 受保护的管理服务（双重认证）
+    protected-admin:
+      chain:
+        middlewares:
+          - "global-auth"
+          - "dashboard-auth"
+          - "secure-headers"
+
+# TLS 配置
+tls:
+  options:
+    default:
+      minVersion: "VersionTLS12"
+      maxVersion: "VersionTLS13"
+      cipherSuites:
+        - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305"
+        - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+        - "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305"
+        - "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
+      curvePreferences:
+        - "CurveP521"
+        - "CurveP384"
+      sniStrict: false

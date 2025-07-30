@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学魁榜AI - Chat Interface</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    
+    <!-- MathJax for LaTeX rendering -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+                ignoreHtmlClass: 'no-math'
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="login-form">
+                <h2>登录 学魁榜AI</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">用户名</label>
+                        <input type="text" id="username" name="username" value="xkbAI" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" name="password" value="XuekuibangAI@2025" required>
+                    </div>
+                    <button type="submit" class="login-btn">
+                        <i class="fas fa-sign-in-alt"></i> 登录
+                    </button>
+                </form>
+                <div id="loginError" class="error-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="app-container" style="display: none;">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1><i class="fas fa-robot"></i> 学魁榜AI</h1>
+            </div>
+            <div class="header-right">
+                <div class="user-selector">
+                    <label for="userUID">用户ID:</label>
+                    <select id="userUID">
+                        <option value="user_001">用户001</option>
+                        <option value="user_002">用户002</option>
+                        <option value="user_003">用户003</option>
+                    </select>
+                </div>
+                <button id="logoutBtn" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <!-- Sidebar - Chat History -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-history"></i> 聊天记录</h3>
+                    <button id="newChatBtn" class="new-chat-btn">
+                        <i class="fas fa-plus"></i> 新建聊天
+                    </button>
+                </div>
+                <div class="chat-list" id="chatList">
+                    <!-- Chat history will be populated here -->
+                </div>
+                <!-- Resize handle for sidebar width -->
+                <div class="resize-handle resize-handle-horizontal" id="sidebarResizeHandle"></div>
+            </aside>
+
+            <!-- Main Chat Area -->
+            <main class="chat-main">
+                <div class="chat-header">
+                    <button id="toggleSidebarBtn" class="toggle-sidebar-btn" title="折叠/展开侧边栏">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h3 id="currentChatTitle">新建聊天</h3>
+                </div>
+
+                <!-- Messages Container -->
+                <div class="messages-container" id="messagesContainer">
+                    <div class="welcome-message">
+                        <i class="fas fa-robot"></i>
+                        <h3>欢迎使用 学魁榜AI</h3>
+                        <p>开始与AI助手对话吧！支持上传PDF和图片文件进行分析。</p>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="input-area" id="inputArea">
+                    <!-- Resize handle for input area height -->
+                    <div class="resize-handle resize-handle-vertical" id="inputResizeHandle"></div>
+                    
+                    <!-- Chat Type Selector -->
+                    <div class="chat-type-selector">
+                        <label for="chatType">对话类型:</label>
+                        <select id="chatType">
+                            <option value="base">对话</option>
+                            <option value="rag">知识库</option>
+                            <option value="deepresearch">深度学习</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-container">
+                        <button id="attachBtn" class="attach-btn" title="上传文件">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button id="sttBtn" class="stt-btn" title="语音输入">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="输入您的消息..." 
+                            rows="1"
+                        ></textarea>
+                        <button id="sendBtn" class="send-btn" title="发送消息">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                        <button id="stopBtn" class="stop-btn" title="停止生成" style="display: none;">
+                            <i class="fas fa-stop"></i>
+                        </button>
+                    </div>
+                    <div class="file-preview" id="filePreview" style="display: none;">
+                        <div class="file-item">
+                            <span class="file-name"></span>
+                            <button class="remove-file-btn">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- File Upload Input (Hidden) -->
+    <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp,.webp" style="display: none;">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>处理中...</p>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

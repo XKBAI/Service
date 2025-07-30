@@ -1,0 +1,24 @@
+# FastAPI 核心框架
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# AI 模型和处理
+faster-whisper>=0.10.0
+# torch>=2.0.0
+numpy>=1.24.0
+
+# API 功能
+pydantic>=2.0.0
+python-multipart==0.0.6
+aiofiles==23.2.1
+
+# 音频处理
+soundfile>=0.12.1
+librosa>=0.10.0
+
+# 异步和并发
+asyncio-mqtt==0.16.1
+
+# 工具库
+tqdm>=4.65.0
+pathlib>=1.0.1 

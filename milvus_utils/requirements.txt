@@ -1,0 +1,8 @@
+# 强制使用预编译包，避免编译
+fastapi>=0.115.12
+uvicorn[standard]>=0.34.0
+pydantic== 2.8.2
+pymilvus==2.5.8
+openai
+tqdm
+langchain

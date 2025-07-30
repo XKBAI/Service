@@ -1,0 +1,10 @@
+# Web框架
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# 文件处理
+aiofiles>=23.0.0
+
+# 其他工具
+python-dateutil>=2.8.2 

@@ -1,0 +1,198 @@
+nohup: ignoring input
+/opt/Anaconda3/lib/python3.12/site-packages/pydantic/_internal/_fields.py:161: UserWarning: Field "model_max_context" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/home/xkb2/Desktop/QY/api-gateway-service/api.py:258: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+/home/xkb2/Desktop/QY/api-gateway-service/api.py:273: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("shutdown")
+2025-06-24 15:58:46,425 - __main__ - INFO - 启动 API 网关 (OAuth2与IP限制版)，监听端口: 60443, Reload模式: True, 日志级别: INFO (Starting API Gateway (OAuth2 with IP Limiting Version) on port: 60443, Reload: True, Log Level: INFO)
+2025-06-24 15:58:46,425 - __main__ - INFO - 热重载已启用，监控目录: ['/home/xkb2/Desktop/HQ/api_gateway']
+2025-06-24 15:58:46,425 - __main__ - INFO - SSL 已启用。密钥: /home/xkb2/ACME.sh/https/acme.sh/cert/*.744204541.xyz.key, 证书: /home/xkb2/ACME.sh/https/acme.sh/cert/fullchain.cer (SSL is ENABLED. Key: /home/xkb2/ACME.sh/https/acme.sh/cert/*.744204541.xyz.key, Cert: /home/xkb2/ACME.sh/https/acme.sh/cert/fullchain.cer)
+INFO:     Will watch for changes in these directories: ['/home/xkb2/Desktop/HQ/api_gateway']
+INFO:     Uvicorn running on https://0.0.0.0:60443 (Press CTRL+C to quit)
+WARNING:  --reload-include and --reload-exclude have no effect unless watchfiles is installed.
+INFO:     Started reloader process [267796] using StatReload
+/opt/Anaconda3/lib/python3.12/site-packages/pydantic/_internal/_fields.py:161: UserWarning: Field "model_max_context" has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+INFO:     Started server process [267802]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     14.145.4.13:64403 - "POST /token HTTP/1.1" 200 OK
+INFO:     14.145.4.13:64403 - "POST /user/add_user HTTP/1.1" 307 Temporary Redirect
+后端服务 user (http://user-service:9000/add_user/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/add_user/) returned HTTP 503: )
+INFO:     14.145.4.13:64403 - "POST /user/add_user/ HTTP/1.1" 503 Service Unavailable
+INFO:     14.145.4.13:64409 - "POST /olmocr/process HTTP/1.1" 401 Unauthorized
+INFO:     14.145.4.13:64412 - "POST /token HTTP/1.1" 200 OK
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:64409 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:64424 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+INFO:     14.145.4.13:65445 - "POST /token HTTP/1.1" 200 OK
+INFO:     14.145.4.13:65445 - "POST /user/add_user HTTP/1.1" 307 Temporary Redirect
+后端服务 user (http://user-service:9000/add_user/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/add_user/) returned HTTP 503: )
+INFO:     14.145.4.13:65445 - "POST /user/add_user/ HTTP/1.1" 503 Service Unavailable
+INFO:     14.145.4.13:65276 - "POST /olmocr/process HTTP/1.1" 401 Unauthorized
+INFO:     14.145.4.13:62467 - "POST /token HTTP/1.1" 200 OK
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:65276 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:62494 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+INFO:     14.145.4.13:63957 - "POST /token HTTP/1.1" 200 OK
+INFO:     14.145.4.13:63958 - "POST /token HTTP/1.1" 200 OK
+INFO:     14.145.4.13:63958 - "POST /user/add_user HTTP/1.1" 307 Temporary Redirect
+后端服务 user (http://user-service:9000/add_user/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/add_user/) returned HTTP 503: )
+INFO:     14.145.4.13:63958 - "POST /user/add_user/ HTTP/1.1" 503 Service Unavailable
+INFO:     14.145.4.13:63580 - "POST /token HTTP/1.1" 200 OK
+INFO:     14.145.4.13:63580 - "POST /user/add_user HTTP/1.1" 307 Temporary Redirect
+后端服务 user (http://user-service:9000/add_user/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/add_user/) returned HTTP 503: )
+INFO:     14.145.4.13:63580 - "POST /user/add_user/ HTTP/1.1" 503 Service Unavailable
+INFO:     14.145.4.13:64841 - "POST /olmocr/process HTTP/1.1" 401 Unauthorized
+INFO:     14.145.4.13:64847 - "POST /token HTTP/1.1" 200 OK
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:64841 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:64861 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+INFO:     183.6.21.179:2914 - "GET /docs HTTP/1.1" 200 OK
+INFO:     183.6.21.179:2957 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     183.6.21.179:3087 - "GET /docs HTTP/1.1" 200 OK
+INFO:     183.6.21.179:5451 - "GET /docs HTTP/1.1" 200 OK
+INFO:     14.145.4.13:64138 - "POST /token HTTP/1.1" 200 OK
+INFO:     14.145.4.13:64138 - "POST /user/add_user HTTP/1.1" 307 Temporary Redirect
+后端服务 user (http://user-service:9000/add_user/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/add_user/) returned HTTP 503: )
+INFO:     14.145.4.13:64138 - "POST /user/add_user/ HTTP/1.1" 503 Service Unavailable
+INFO:     14.145.4.13:64185 - "POST /olmocr/process HTTP/1.1" 401 Unauthorized
+INFO:     14.145.4.13:64189 - "POST /token HTTP/1.1" 200 OK
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:64185 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:64774 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+INFO:     14.145.4.13:63619 - "POST /olmocr/process HTTP/1.1" 401 Unauthorized
+INFO:     14.145.4.13:63620 - "POST /token HTTP/1.1" 200 OK
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:63619 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:63625 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+INFO:     14.145.4.13:64229 - "POST /olmocr/process HTTP/1.1" 401 Unauthorized
+INFO:     14.145.4.13:64231 - "POST /token HTTP/1.1" 200 OK
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:64229 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+OCR 异步后端错误 503 at http://olmocr-service:9000/olmocr/process: Server error '503 Service Unavailable' for url 'http://olmocr-service:9000/olmocr/process'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+INFO:     14.145.4.13:62423 - "POST /olmocr/process HTTP/1.1" 503 Service Unavailable
+INFO:     142.171.21.42:55186 - "GET /docs HTTP/1.1" 200 OK
+INFO:     142.171.21.42:55186 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     142.171.21.42:55192 - "GET /user/get_all_users/ HTTP/1.1" 401 Unauthorized
+INFO:     142.171.21.42:37976 - "POST /token HTTP/1.1" 200 OK
+后端服务 user (http://user-service:9000/get_all_users/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_all_users/) returned HTTP 503: )
+INFO:     142.171.21.42:37976 - "GET /user/get_all_users/ HTTP/1.1" 503 Service Unavailable
+后端服务 user (http://user-service:9000/get_all_users/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_all_users/) returned HTTP 503: )
+INFO:     142.171.21.42:34408 - "GET /user/get_all_users/ HTTP/1.1" 503 Service Unavailable
+INFO:     142.171.21.42:39394 - "GET /docs HTTP/1.1" 200 OK
+INFO:     142.171.21.42:39394 - "GET /openapi.json HTTP/1.1" 200 OK
+后端服务 user (http://user-service:9000/get_all_users/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_all_users/) returned HTTP 503: )
+INFO:     142.171.21.42:32918 - "POST /token HTTP/1.1" 200 OK
+后端服务 user (http://user-service:9000/get_all_users/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_all_users/) returned HTTP 503: )
+INFO:     142.171.21.42:59286 - "GET /user/get_all_users/ HTTP/1.1" 503 Service Unavailable
+后端服务 user (http://user-service:9000/get_user_chat/?user_id=HQ) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_user_chat/?user_id=HQ) returned HTTP 503: )
+INFO:     142.171.21.42:35122 - "GET /user/get_user_chat/?user_id=HQ HTTP/1.1" 503 Service Unavailable
+INFO:     142.171.21.42:40670 - "GET /docs HTTP/1.1" 200 OK
+INFO:     142.171.21.42:40670 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     142.171.21.42:40682 - "POST /token HTTP/1.1" 200 OK
+后端服务 user (http://user-service:9000/get_all_users/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_all_users/) returned HTTP 503: )
+INFO:     142.171.21.42:45990 - "GET /user/get_all_users/ HTTP/1.1" 503 Service Unavailable
+INFO:     202.153.84.92:60947 - "GET /docs HTTP/1.1" 200 OK
+INFO:     202.153.84.92:60947 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     202.153.84.92:61109 - "POST /token HTTP/1.1" 200 OK
+服务 'stt' 健康检查 (GET http://faster-whisper-stt:9000/stt/health) 失败: ReadTimeout -  (Health check for 'stt' (GET http://faster-whisper-stt:9000/stt/health) failed: ReadTimeout - )
+服务 'ocr' 健康检查 (GET http://olmocr-service:9000/) 失败: ReadTimeout -  (Health check for 'ocr' (GET http://olmocr-service:9000/) failed: ReadTimeout - )
+服务 'user' 健康检查 (GET http://user-service:9000/get_all_users/) 失败: ReadTimeout -  (Health check for 'user' (GET http://user-service:9000/get_all_users/) failed: ReadTimeout - )
+服务 'md2pdf' 健康检查 (GET http://md2pdf-service:9000/) 失败: ReadTimeout -  (Health check for 'md2pdf' (GET http://md2pdf-service:9000/) failed: ReadTimeout - )
+服务 'vlm' 健康检查 (GET http://vlm-service:9000/vlm/health) 失败: ReadTimeout -  (Health check for 'vlm' (GET http://vlm-service:9000/vlm/health) failed: ReadTimeout - )
+INFO:     202.153.84.92:61157 - "GET /health HTTP/1.1" 200 OK
+服务 'stt' 健康检查 (GET http://faster-whisper-stt:9000/stt/health) 失败: ReadTimeout -  (Health check for 'stt' (GET http://faster-whisper-stt:9000/stt/health) failed: ReadTimeout - )
+服务 'ocr' 健康检查 (GET http://olmocr-service:9000/) 失败: ReadTimeout -  (Health check for 'ocr' (GET http://olmocr-service:9000/) failed: ReadTimeout - )
+INFO:     202.153.84.92:62667 - "GET /docs HTTP/1.1" 200 OK
+INFO:     202.153.84.92:62667 - "GET /openapi.json HTTP/1.1" 200 OK
+服务 'vlm' 健康检查 (GET http://vlm-service:9000/vlm/health) 失败: ReadTimeout -  (Health check for 'vlm' (GET http://vlm-service:9000/vlm/health) failed: ReadTimeout - )
+INFO:     202.153.84.92:62560 - "GET /health HTTP/1.1" 200 OK
+INFO:     202.153.84.92:59426 - "GET /docs HTTP/1.1" 200 OK
+INFO:     202.153.84.92:59427 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     142.171.21.42:59448 - "GET /docs HTTP/1.1" 200 OK
+INFO:     142.171.21.42:59448 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     202.153.84.92:59584 - "POST /token HTTP/1.1" 200 OK
+INFO:     142.171.21.42:59456 - "GET /user/get_all_users/ HTTP/1.1" 401 Unauthorized
+服务 'ocr' 健康检查 (GET http://olmocr-service:9000/) 失败: ReadTimeout -  (Health check for 'ocr' (GET http://olmocr-service:9000/) failed: ReadTimeout - )
+服务 'md2pdf' 健康检查 (GET http://md2pdf-service:9000/) 失败: ReadTimeout -  (Health check for 'md2pdf' (GET http://md2pdf-service:9000/) failed: ReadTimeout - )
+用户 xkbAI 认证失败，IP: 142.171.21.42。(Authentication failed for user: xkbAI, IP: 142.171.21.42)
+INFO:     142.171.21.42:37592 - "POST /token HTTP/1.1" 401 Unauthorized
+服务 'vlm' 健康检查 (GET http://vlm-service:9000/vlm/health) 失败: ReadTimeout -  (Health check for 'vlm' (GET http://vlm-service:9000/vlm/health) failed: ReadTimeout - )
+INFO:     202.153.84.92:59679 - "GET /health HTTP/1.1" 200 OK
+INFO:     142.171.21.42:40632 - "POST /token HTTP/1.1" 200 OK
+后端服务 user (http://user-service:9000/get_all_users/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_all_users/) returned HTTP 503: )
+INFO:     142.171.21.42:50478 - "GET /user/get_all_users/ HTTP/1.1" 503 Service Unavailable
+服务 'tts' 健康检查 (GET http://melotts-tts:9000/health) 失败: ReadTimeout -  (Health check for 'tts' (GET http://melotts-tts:9000/health) failed: ReadTimeout - )
+INFO:     142.171.21.42:48724 - "GET / HTTP/1.1" 200 OK
+服务 'vlm' 健康检查 (GET http://vlm-service:9000/vlm/health) 失败: ReadTimeout -  (Health check for 'vlm' (GET http://vlm-service:9000/vlm/health) failed: ReadTimeout - )
+INFO:     202.153.84.92:60971 - "GET /health HTTP/1.1" 200 OK
+INFO:     142.171.21.42:48724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     142.171.21.42:48724 - "GET /docs HTTP/1.1" 200 OK
+INFO:     142.171.21.42:48724 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     142.171.21.42:46090 - "GET /user/get_all_users/ HTTP/1.1" 401 Unauthorized
+INFO:     223.69.171.137:31278 - "GET /docs HTTP/1.1" 200 OK
+INFO:     223.69.171.137:31278 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     223.69.171.137:31279 - "GET /docs HTTP/1.1" 200 OK
+INFO:     223.69.171.137:31279 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     223.69.171.137:31282 - "GET /docs HTTP/1.1" 200 OK
+INFO:     223.69.171.137:31282 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     223.69.171.137:31283 - "GET /user/get_all_users/ HTTP/1.1" 401 Unauthorized
+INFO:     223.69.171.137:31283 - "GET /user/get_all_users/ HTTP/1.1" 401 Unauthorized
+INFO:     223.69.171.137:31284 - "POST /token HTTP/1.1" 200 OK
+后端服务 user (http://user-service:9000/get_all_users/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_all_users/) returned HTTP 503: )
+INFO:     223.69.171.137:31284 - "GET /user/get_all_users/ HTTP/1.1" 503 Service Unavailable
+INFO:     223.69.171.137:31287 - "GET /docs HTTP/1.1" 200 OK
+INFO:     223.69.171.137:31287 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     223.69.171.137:31287 - "POST /token HTTP/1.1" 200 OK
+后端服务 user (http://user-service:9000/get_all_users/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_all_users/) returned HTTP 503: )
+INFO:     223.69.171.137:31287 - "GET /user/get_all_users/ HTTP/1.1" 503 Service Unavailable
+INFO:     223.69.171.137:31288 - "GET /docs HTTP/1.1" 200 OK
+INFO:     223.69.171.137:31288 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     223.69.171.137:31290 - "GET /docs HTTP/1.1" 200 OK
+INFO:     223.69.171.137:31290 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     202.153.84.92:62046 - "GET / HTTP/1.1" 200 OK
+INFO:     202.153.84.92:62044 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     202.153.84.92:62062 - "GET /docs HTTP/1.1" 200 OK
+INFO:     202.153.84.92:62062 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     202.153.84.92:62093 - "POST /token HTTP/1.1" 200 OK
+后端服务 user (http://user-service:9000/get_all_users/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_all_users/) returned HTTP 503: )
+INFO:     202.153.84.92:62094 - "GET /user/get_all_users/ HTTP/1.1" 503 Service Unavailable
+INFO:     223.69.171.137:31291 - "POST /token HTTP/1.1" 200 OK
+后端服务 user (http://user-service:9000/get_all_users/) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_all_users/) returned HTTP 503: )
+INFO:     223.69.171.137:31291 - "GET /user/get_all_users/ HTTP/1.1" 503 Service Unavailable
+后端服务 user (http://user-service:9000/get_user_chat/?user_id=admin) 返回 HTTP 503:  (Backend service user (http://user-service:9000/get_user_chat/?user_id=admin) returned HTTP 503: )
+INFO:     202.153.84.92:62113 - "GET /user/get_user_chat/?user_id=admin HTTP/1.1" 503 Service Unavailable
+INFO:     54.198.141.170:54396 - "GET / HTTP/1.1" 200 OK

@@ -1,0 +1,81 @@
+# 模型文件和大文件
+*.zip
+*.tar.gz
+*.bin
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+*.model
+*.pkl
+*.h5
+*.onnx
+
+# 音频视频文件
+*.wav
+*.mp3
+*.mp4
+*.avi
+*.flac
+*.ogg
+*.mov
+
+# 图片文件
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+
+# 数据和模型目录
+xinference_data/
+pretrained_models/
+models/
+data/
+shared-data/
+my_asset/
+milvus/volumes/
+
+# 日志和缓存
+logs/
+*.log
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.cache/
+cache/
+
+# 环境变量
+.env
+.env.local
+.env.production
+.env.development
+
+# IDE和编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# Docker相关大文件
+*.tar
+*.img
+
+# 其他大文件格式
+*.db
+*.sqlite
+*.sqlite3olmocr/uploads/*.pdf
+traefik/letsencrypt/
+docker-compose.yml.backup*
+docker-compose.yml
+docker-compose.yml
+docker-compose.yml.bak2

@@ -1,0 +1,60 @@
+# GPU-optimized dependencies for OLMoCR
+# Core web service dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+pydantic>=2.0.0
+
+# GPU-optimized PyTorch (will be installed separately in Dockerfile)
+# torch>=2.5.1+cu121
+# torchvision>=0.20.1+cu121
+# torchaudio>=2.5.1+cu121
+
+# SGLang with GPU optimization
+# sgl-kernel==0.0.3.post1  (installed separately)
+# sglang[all]==0.4.2  (installed separately)
+# flashinfer==0.1.6  (installed separately)
+
+# AI and ML libraries
+transformers==4.46.2
+accelerate>=0.21.0
+datasets>=2.14.0
+huggingface-hub>=0.16.0
+
+# PDF and image processing
+pypdf>=5.2.0
+pypdfium2
+Pillow>=9.0.0
+img2pdf
+
+# Language and text processing
+lingua-language-detector
+ftfy
+bleach
+markdown2
+
+# File and data handling
+cached-path
+smart_open[all]
+filelock
+orjson
+requests
+zstandard
+boto3
+httpx
+
+# CUDA optimization utilities
+einops
+apex  # NVIDIA Apex for mixed precision
+ninja  # For faster compilation
+
+# Monitoring and utilities
+cryptography
+peft
+wandb
+omegaconf
+pyzmq
+
+# Optional performance libraries
+psutil
+GPUtil 

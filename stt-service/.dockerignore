@@ -1,0 +1,68 @@
+# 测试文件和结果
+*test*
+*Test*
+test_*
+*_test*
+*.png
+*.json
+*.csv
+*.txt
+!requirements.txt
+!finaltest-api.py
+*.ipynb
+
+# 开发和版本控制
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache
+.coverage
+*.log
+
+# IDE文件
+.vscode
+.idea
+*.swp
+*.swo
+
+# 音频测试文件
+test_audio/
+*.mp3
+*.wav
+*.flac
+*.ogg
+*.m4a
+
+# 模型文件（将通过volume挂载）
+large-v3/
+large-v3.zip
+*.bin
+models/
+
+# 临时文件
+temp_*
+*.tmp
+
+# 测试结果目录
+batch_test_results/
+concurrency_test_results/
+whisper_test_results/
+
+# 其他API版本（只保留finaltest-api.py）
+app.py
+app2.py
+faster-whisper.py
+faster-whisper-api.py
+optimized-*.py
+modified-*.py
+multi_gpu_*.py
+stt_consul_service.py
+xinference_api.py
+finaltest-api2.py
+concurrent_test*.py
+batch_test*.py
+optimized-load-tester.py 

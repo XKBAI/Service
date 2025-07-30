@@ -1,0 +1,1 @@
+{"detail":"PDF转换失败: Pandoc转换失败 (返回码: 47):\nSTDOUT:\n\nSTDERR:\nxelatex not found. Please select a different --pdf-engine or install xelatex\n"}

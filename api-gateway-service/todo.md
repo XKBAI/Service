@@ -1,0 +1,9 @@
+1. 分割线和#标题###几级标题没有进行md渲染,聊天记录里面的公式也没有解码
+常见的诱导公式
+以下公式中，_INLINE_MATH_IFxhbHBoYSA=INLINE_MATH 是任意角，INLINE_MATH_IGsg_INLINE_MATH 是整数：
+
+_INLINE_MATH_IFxzaW4oXGFscGhhICsgMmtccGkpID0gXHNpblxhbHBoYSA=INLINE_MATH
+_INLINE_MATH_IFxjb3MoXGFscGhhICsgMmtccGkpID0gXGNvc1xhbHBoYSA=INLINE_MATH
+_INLINE_MATH_IFx0YW4oXGFscGhhICsga1xwaSkgPSBcdGFuXGFscGhhIA==INLINE_MATH
+
+2. thinking部分的逻辑又倒退回去了，之前有<think>就进thinking容器，</think>就出容器的逻辑是对的，怎么现在又退回去了

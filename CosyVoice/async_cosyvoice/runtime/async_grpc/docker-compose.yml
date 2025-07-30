@@ -1,0 +1,39 @@
+# docker-compose.yml（修改版）
+version: '3.8'
+
+services:
+  cosyvoice-all-in-one:
+    build:
+      context: /home/xkb2/Desktop/QY/CosyVoice  # 绝对路径到CosyVoice目录
+      dockerfile: async_cosyvoice/runtime/async_grpc/Dockerfile
+    container_name: TTS_55002
+    ports:
+      - "50000:50000"  # gRPC端口
+      - "55002:9000"   # FastAPI端口
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      # 模型文件挂载
+      - /home/xkb2/Desktop/QY/CosyVoice/pretrained_models/CosyVoice2-0.5B:/app/models/CosyVoice2-0.5B
+      # 音频输出目录
+      - /home/xkb2/Desktop/QY/CosyVoice/async_cosyvoice/runtime/async_grpc/audio_output:/app/audio_output
+      - /home/xkb2/Desktop/QY/CosyVoice/async_cosyvoice/runtime/async_grpc/shared-data:/app/shared
+      # 新增：qc16k音频文件挂载
+      - /home/xkb2/Desktop/QY/CosyVoice_0/my_asset/qc16k.wav:/app/assets/qc16k.wav
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  audio_output:
+  shared-data:
