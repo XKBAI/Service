@@ -1,0 +1,1149 @@
+version: '3.8'
+
+# # 环境变量配置
+# env_file:
+#   - vllm-config.env
+
+services:
+  # Traefik反向代理服务
+  traefik:
+    image: traefik:v3.0
+    container_name: TRAEFIK_PROXY
+    security_opt:
+      - no-new-privileges:true
+    command:
+      # API和仪表板配置
+      - --api.dashboard=true
+      - --api.insecure=true
+      # Ping端点配置（用于健康检查）
+      - --ping=true
+      # 入口点配置
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      # 自动HTTPS重定向
+      # - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      # Docker提供者配置
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=ai-services
+      # 文件提供者配置（动态配置）
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --providers.file.watch=true
+      # 证书解析器配置（可选，用于Let's Encrypt）
+  
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=alidns
+      - --certificatesresolvers.letsencrypt.acme.email=744204541@qq.com  # 🔥 用你的QQ邮箱
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      # 日志配置
+      - --log.level=INFO
+      - --accesslog=true
+      - --accesslog.filepath=/var/log/traefik/access.log
+      - --accesslog.format=json
+      # Prometheus指标配置
+      - --metrics.prometheus=true
+      - --metrics.prometheus.addEntryPointsLabels=true
+      - --metrics.prometheus.addServicesLabels=true
+      - --metrics.prometheus.addRoutersLabels=true
+    ports:
+      - "8000:80"   # HTTP (避免与Apache冲突)
+      - "8443:443"  # HTTPS 
+      # - "8080:8080" # Traefik仪表板
+      # - "8001:81" # 内网HTTP端口
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/letsencrypt:/letsencrypt
+      - ./traefik/logs:/var/log/traefik
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    environment:
+      # !!! 将 YOUR_ALICLOUD_ACCESS_KEY_ID 替换为您的真实 AccessKey ID !!!
+      - ALICLOUD_ACCESS_KEY=
+      # !!! 将 YOUR_ALICLOUD_ACCESS_KEY_SECRET 替换为您的真实 AccessKey Secret !!!
+      - ALICLOUD_SECRET_KEY=
+    networks:
+      - ai-services
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "traefik healthcheck --ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      # 原有的 traefik 路由
+      - "traefik.http.routers.traefik-https.rule=Host(`xkb.744204541.xyz`) || PathPrefix(`/traefik`)"
+      - "traefik.http.routers.traefik-https.entrypoints=websecure"
+      - "traefik.http.routers.traefik-https.tls=true"
+      - "traefik.http.routers.traefik-https.service=api@internal"
+      - "traefik.http.routers.traefik-https.middlewares=protected-api@file"
+      
+      # HTTP 重定向
+      - "traefik.http.routers.traefik-http.rule=Host(`localhost`) || PathPrefix(`/traefik`)"
+      - "traefik.http.routers.traefik-http.entrypoints=web"
+
+      # 新增：Dashboard 专用路由 - 只使用 BasicAuth
+      - "traefik.http.routers.dashboard.rule=Host(`localhost`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-auth@file"
+      
+      # 删除这行重复的配置：
+      # - "traefik.http.routers.traefik-https.rule=Host(`xkb.744204541.xyz`) || PathPrefix(`/traefik`)"
+
+
+
+  # STT语音转文本服务 - 基于faster-whisper目录
+  stt-service:
+    build: 
+      context: ./stt-service
+      dockerfile: Dockerfile
+    container_name: STT_55001
+    ports:
+      - "55001:9000"
+    environment:
+      - MODEL_SIZE=large-v3
+      - PORT=9000
+      - CUDA_VISIBLE_DEVICES=0   # 用GPU 0
+      - FASTAPI_ROOT_PATH=/stt  # 设置FastAPI根路径
+      # - HTTPS_PROXY=http://192.168.2.222:1080
+      # - HTTP_PROXY=http://192.168.2.222:1080
+    volumes:
+      # 模型文件挂载 - 使用本地large-v3模型
+      - ./stt-service/large-v3:/app/large-v3:ro
+      - ./models/whisper:/tmp/faster_whisper
+      - ./shared-data:/app/shared
+      - ./stt-service/test_audio:/app/test_audio:ro
+    deploy:
+      resources:
+        reservations: #预留资源，确保服务至少能获得这些资源。
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        # limits: #限制资源使用，确保服务不会超出这些限制。
+        #   memory: 8G
+        #   cpus: '4'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/stt/health"] 
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s  # 增加启动时间，因为需要加载大模型
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      # === 1. HTTPS 路由：实际处理请求 ===
+      - "traefik.http.routers.stt-https.rule=Host(`xkb.744204541.xyz`) || PathPrefix(`/stt`)"
+      - "traefik.http.routers.stt-https.entrypoints=websecure"
+      - "traefik.http.routers.stt-https.tls=true"
+      - "traefik.http.services.stt.loadbalancer.server.port=9000"
+      # 🔥 转发到容器内的请求去除前缀 + 添加认证
+      - "traefik.http.routers.stt-https.middlewares=stt-stripprefix,protected-api@file"
+      - "traefik.http.middlewares.stt-stripprefix.stripprefix.prefixes=/stt"
+
+
+
+
+#===============================================
+#           async_cosyvocie服务
+#===============================================
+  tts-service:
+    build: 
+      context: ./CosyVoice  # 绝对路径到CosyVoice目录
+      dockerfile: Dockerfile
+    container_name: TTS_55002
+    ports:
+      - "50000:50000"  # gRPC端口
+      - "55002:9000"   # FastAPI端口
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=7  # GPU设备7
+      - FASTAPI_ROOT_PATH=/tts  # 设置FastAPI根路径
+    volumes:
+      # 模型文件挂载
+      - ./CosyVoice/pretrained_models/CosyVoice2-0.5B:/app/models/CosyVoice2-0.5B
+      # 音频输出目录
+      - ./CosyVoice/async_cosyvoice/runtime/async_grpc/audio_output:/app/audio_output
+      - ./CosyVoice/async_cosyvoice/runtime/async_grpc/shared-data:/app/shared
+      # 新增：qc16k音频文件挂载
+      - ./CosyVoice/my_asset/qc16k.wav:/app/assets/qc16k.wav
+    command: >
+      /bin/bash -c "
+        cd /app/async_cosyvoice/runtime/async_grpc && 
+        chmod +x start_services.sh && 
+        ./start_services.sh && 
+        tail -f /dev/null
+      "
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 300s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0','1','2','3','4','5','6','7']  # GPU设备7
+              capabilities: [gpu]
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      # === 1. HTTPS 路由：实际处理请求 ===
+      - "traefik.http.routers.tts-https.rule=Host(`xkb.744204541.xyz`) || PathPrefix(`/tts`)"
+      - "traefik.http.routers.tts-https.entrypoints=websecure"
+      - "traefik.http.routers.tts-https.tls=true"
+      - "traefik.http.services.tts.loadbalancer.server.port=9000"
+      # 🔥 转发到容器内的请求去除前缀 + 添加认证
+      - "traefik.http.routers.tts-https.middlewares=tts-stripprefix,protected-api@file"
+      - "traefik.http.middlewares.tts-stripprefix.stripprefix.prefixes=/tts"
+
+  # SGLang 模型推理服务 - 基于olmOCR模型
+  sglang-service:
+    # 构建你的 Docker 镜像
+    build:
+      context: ./sglang_service
+      dockerfile: Dockerfile
+    image: my-sglang-service:latest
+    container_name: VLM_SGLANG_30024
+
+    ports:
+      - "30024:30024"
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['2']
+              capabilities: [gpu]
+
+    volumes:
+      - /home/xkb2/Desktop/QY/olmocr/model/olmOCR-7B-0225-preview:/app/model/olmOCR-7B-0225-preview
+
+    # 重启策略，可选
+    restart: unless-stopped
+    networks:
+      - ai-services
+    # labels:
+    #   - "traefik.enable=true"
+
+  # OCR业务逻辑服务 - 基于OLMOCR API
+  ocr-service:
+    build: 
+      context: ./olmocr
+      dockerfile: Dockerfile
+    image: olmocr-api:latest
+    container_name: OCR_55004
+    ports:
+      - "55004:9000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OCR_PORT=9000
+      - OCR_HOST=0.0.0.0
+      # 模型和缓存配置
+      - MODEL_NAME=./model/olmOCR-7B-0225-preview
+      - HF_HOME=/root/.cache/huggingface
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+      # SGLang服务连接（如果需要）
+      - SGLANG_SERVER_URL=http://sglang-service:30024
+      - SGLANG_SERVER_PORT=30024
+      - APPLY_FILTER=false
+      - HTTPS_PROXY=http://192.168.2.222:1080
+      - HTTP_PROXY=http://192.168.2.222:1080
+      - FASTAPI_ROOT_PATH=/ocr
+    volumes:
+      # 工作目录和数据共享
+      - ./shared-data:/app/shared
+      - ./olmocr/uploads:/app/uploads
+      - ./olmocr/results:/app/results
+      - ./olmocr/temp:/app/temp
+      # 日志和缓存
+      - ./olmocr/logs:/app/logs
+      - /root/.cache/huggingface:/root/.cache/huggingface
+      # 本地模型挂载
+      - ./olmocr/model:/app/model:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/olmocr/"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 120s  # CUDA镜像启动时间稍长
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    depends_on:
+      - sglang-service  # 保持对SGLang的依赖
+    labels:
+      - "traefik.enable=true"
+      # === 1. HTTPS 路由：实际处理请求 ===
+      - "traefik.http.routers.ocr-https.rule=Host(`xkb.744204541.xyz`) || PathPrefix(`/ocr`)"
+      - "traefik.http.routers.ocr-https.entrypoints=websecure"
+      - "traefik.http.routers.ocr-https.tls=true"
+      - "traefik.http.services.ocr.loadbalancer.server.port=9000"
+      # 🔥 转发到容器内的请求去除前缀 + 添加认证
+      - "traefik.http.routers.ocr-https.middlewares=ocr-stripprefix,protected-api@file"
+      - "traefik.http.middlewares.ocr-stripprefix.stripprefix.prefixes=/ocr"
+
+  # 新增MySQL服务 - 基于用户Docker命令配置
+  mysql-db:
+    image: mysql:9.3
+    container_name: mysql_db
+    ports:
+      - "3306:3306"  # 修改主机端口避免冲突
+    privileged: true
+    environment:
+      MYSQL_ROOT_PASSWORD: qwe123asd
+    volumes:
+      - /data/mysql/data:/var/lib/mysql
+      - /data/mysql/log:/var/log/mysql
+      - /etc/localtime:/etc/localtime
+      - /data/mysql/my.cnf:/etc/mysql/my.cnf
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pqwe123asd"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+
+  # User用户管理服务
+  user-service:
+    build: 
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: USER_55003
+    ports:
+      - "55003:9000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=mysql-db
+      - DB_USER=root
+      - DB_PASSWORD=qwe123asd
+      - DB_NAME=CHAT
+      - FASTAPI_ROOT_PATH=/user
+    volumes:
+      - ./shared-data:/app/shared
+      - ./user-service/logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/get_all_users/", "-H", "X-API-Key: xkbai"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    labels:   
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-https.rule=PathPrefix(`/user`)"
+      - "traefik.http.routers.user-https.entrypoints=websecure"
+      - "traefik.http.routers.user-https.tls=true"
+      - "traefik.http.routers.user-https.middlewares=user-stripprefix@docker,protected-api@file,cors-headers@file"
+      - "traefik.http.middlewares.user-stripprefix.stripprefix.prefixes=/user"
+      - "traefik.http.services.user.loadbalancer.server.port=9000"
+
+  # MD2PDF Markdown转PDF服务
+  md2pdf-service:
+    build: 
+      context: ./md2pdf-service
+      dockerfile: Dockerfile
+    container_name: MD2PDF_55005
+    ports:
+      - "55005:9000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - IMAGE_ROOT_DIR=/app/shared
+      - PORT=9000
+      - HOST=0.0.0.0
+      # 设置时区
+      - TZ=Asia/Shanghai
+      # 禁用代理用于容器内部通信
+      - http_proxy=
+      - https_proxy=
+      - HTTP_PROXY=
+      - HTTPS_PROXY=
+      - FASTAPI_ROOT_PATH=/md2pdf
+    volumes:
+      - ./shared-data:/app/shared
+      - ./md2pdf-service/logs:/app/logs
+      - ./md2pdf-service/storage:/app/storage
+      # 如果需要访问系统字体
+      - /usr/share/fonts:/usr/share/fonts:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.md2pdf-https.rule=PathPrefix(`/md2pdf`)"
+      - "traefik.http.routers.md2pdf-https.entrypoints=websecure"
+      - "traefik.http.routers.md2pdf-https.tls=true"
+      - "traefik.http.services.md2pdf.loadbalancer.server.port=9000"
+      - "traefik.http.routers.md2pdf-https.middlewares=md2pdf-stripprefix"
+      - "traefik.http.middlewares.md2pdf-stripprefix.stripprefix.prefixes=/md2pdf"
+
+  # API网关服务
+  auth:
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    container_name: AUTH
+    ports:
+      - "54000:9000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FASTAPI_ROOT_PATH=/auth
+    volumes:
+      - ./shared-data:/app/shared
+      - ./api-gateway-service/logs:/app/logs
+    restart: unless-stopped
+    # 禁用Dockerfile中定义的健康检查，因为依赖的服务检查会导致超时
+    healthcheck:
+      disable: true
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth-https.rule=Host(`xkb.744204541.xyz`) || PathPrefix(`/auth`)"
+      - "traefik.http.routers.auth-https.entrypoints=websecure"
+      - "traefik.http.routers.auth-https.tls=true"
+      # 注意：auth服务不应该有 protected-api@file 中间件
+      - "traefik.http.routers.auth-https.middlewares=auth-stripprefix@docker,cors-headers@file"
+      - "traefik.http.middlewares.auth-stripprefix.stripprefix.prefixes=/auth"
+      - "traefik.http.services.auth.loadbalancer.server.port=9000"
+
+  api-gateway:
+    build: 
+      context: ./api-gateway-service
+      dockerfile: Dockerfile
+    container_name: API_GATEWAY_60443
+    ports:
+      - "60443:60443"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - STT_SERVICE_URL=http://STT_55001:9000
+      - TTS_SERVICE_URL=http://TTS_55002:9000
+      - OCR_SERVICE_URL=http://OCR_55004:9000
+      - SGLANG_SERVICE_URL=http://VLM_SGLANG_30024:30024
+      - USER_SERVICE_URL=http://USER_55003:9000
+      - VLM_SERVICE_URL=http://VLM_SGLANG_30024:9000
+      - MD2PDF_SERVICE_URL=http://192.168.2.3:55000
+      - LLM_SERVICE_URL=http://192.168.2.3:61080
+      - XINFERENCE_SERVICE_URL=http://XINFERENCE_9997:9997
+      - EMBEDDING_SERVICE_URL=http://XINFERENCE_9997:9997
+      - RERANKER_SERVICE_URL=http://XINFERENCE_9997:9997
+      # SSL配置环境变量
+      - SSL_ROOT_DIR=/app/ssl/cert
+      - SSL_CERT_NAME=fullchain.cer
+      - SSL_KEY_NAME=*.744204541.xyz.key
+      - GATEWAY_PORT=60443
+      # - FASTAPI_ROOT_PATH=/api-gateway
+    volumes:
+      - ./shared-data:/app/shared
+      - ./api-gateway-service/logs:/app/logs
+      # SSL证书挂载
+      - /home/xkb2/ACME.sh/https/acme.sh/cert:/app/ssl/cert:ro
+    restart: unless-stopped
+    # 禁用Dockerfile中定义的健康检查，因为依赖的服务检查会导致超时
+    healthcheck:
+      disable: true
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    # 暂时移除所有依赖，让网关可以独立启动
+    # depends_on:
+      # - faster-whisper-stt
+      # - melotts-tts
+      # - user-service
+      # - md2pdf-service
+      # - xinference-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway-https.rule=PathPrefix(`/gateway`)"
+      - "traefik.http.routers.gateway-https.entrypoints=websecure"
+      - "traefik.http.routers.gateway-https.tls=true"
+      - "traefik.http.services.gateway.loadbalancer.server.port=9000"
+      - "traefik.http.routers.gateway-https.middlewares=gateway-stripprefix"
+      - "traefik.http.middlewares.gateway-stripprefix.stripprefix.prefixes=/api"
+
+  milvus-service:
+    build: 
+      context: ./milvus_utils
+      dockerfile: Dockerfile
+    container_name: milvus-service
+    ports:
+      - "57300:9000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MILVUS_HOST=milvus-standalone
+      - EMBEDDING_URL=http://xinference-service:9997/v1
+      - FASTAPI_ROOT_PATH=/milvus
+    volumes:
+      - ./shared-data:/app/shared
+    restart: unless-stopped
+    # 禁用Dockerfile中定义的健康检查，因为依赖的服务检查会导致超时
+    healthcheck:
+      disable: true
+    networks:
+      - ai-services
+      - milvus-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    # 暂时移除所有依赖，让网关可以独立启动
+    depends_on:
+      - milvus-minio
+      - milvus-etcd
+      - milvus-standalone
+      - milvus-attu
+      # - faster-whisper-stt
+      # - melotts-tts
+      # - user-service
+      # - md2pdf-service
+      # - xinference-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.milvus_service-https.rule=PathPrefix(`/milvus`)"
+      - "traefik.http.routers.milvus_service-https.entrypoints=websecure"
+      - "traefik.http.routers.milvus_service-https.tls=true"
+      - "traefik.http.services.milvus_service.loadbalancer.server.port=9000"
+      - "traefik.http.routers.milvus_service-https.middlewares=milvus_service-stripprefix"
+      - "traefik.http.middlewares.milvus_service-stripprefix.stripprefix.prefixes=/milvus"
+
+  # ====== 新增服务区域 ======
+
+  # Milvus向量数据库 - etcd
+  milvus-etcd:
+    image: quay.io/coreos/etcd:v3.5.18
+    container_name: milvus-etcd
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - ./milvus/volumes/etcd:/etcd
+    command: etcd -advertise-client-urls=http://milvus-etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - ai-services
+      - milvus-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+
+  # Milvus向量数据库 - MinIO
+  milvus-minio:
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    container_name: milvus-minio
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9001:9001"
+      - "9002:9000"  # 修改端口避免冲突
+    volumes:
+      - ./milvus/volumes/minio:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - ai-services
+      - milvus-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+
+  # Milvus向量数据库 - 主服务
+  milvus-standalone:
+    image: milvusdb/milvus:v2.5.10
+    container_name: milvus-standalone
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: milvus-etcd:2379
+      MINIO_ADDRESS: milvus-minio:9000
+    volumes:
+      - ./milvus/volumes/milvus:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - milvus-etcd
+      - milvus-minio
+    networks:
+      - ai-services
+      - milvus-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+        - "traefik.enable=true"
+
+  # Milvus管理界面
+  milvus-attu:
+    image: zilliz/attu:latest
+    container_name: milvus-attu
+    environment:
+      MILVUS_URL: milvus-standalone:19530
+    ports:
+      - "3001:3000"
+    depends_on:
+      - milvus-standalone
+    networks:
+      - ai-services
+      - milvus-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      # - "traefik.http.routers.attu-https.rule=PathPrefix(`/attu`)"
+      # - "traefik.http.routers.attu-https.entrypoints=websecure"
+      # - "traefik.http.routers.attu-https.tls=true"
+      # - "traefik.http.services.attu.loadbalancer.server.port=3000"
+      # - "traefik.http.routers.attu-https.middlewares=attu-stripprefix"
+      # - "traefik.http.middlewares.attu-stripprefix.stripprefix.prefixes=/attu"
+
+  # Redis缓存服务 - 迁移自原项目
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    networks:
+      - ai-services
+      - newapi-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # MySQL数据库 - 迁移自原项目
+  mysql:
+    image: mysql:8.2
+    container_name: mysql_newapi
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: new-api
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # ports:
+    #   - "3306:3306"  # If you want to access MySQL from outside Docker, uncomment
+    networks:
+      - ai-services
+      - newapi-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # NewAPI服务
+  new-api:
+    image: calciumion/new-api:v0.8.7.1
+    container_name: new-api
+    restart: always
+    command: --log-dir /app/logs
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/data
+      - ./logs:/app/logs
+    environment:
+      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api
+      - REDIS_CONN_STRING=redis://redis
+      - TZ=Asia/Shanghai
+    #      - TIKTOKEN_CACHE_DIR=./tiktoken_cache
+    #      - SESSION_SECRET=random_string
+    #      - NODE_TYPE=slave
+    #      - SYNC_FREQUENCY=60
+    #      - FRONTEND_BASE_URL=https://openai.justsong.cn
+    depends_on:
+      - redis
+      - mysql
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' | awk -F: '{print $$2}'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ai-services
+      - newapi-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      # - "traefik.http.routers.newapi-https.rule=PathPrefix(`/newapi`)"
+      # - "traefik.http.routers.newapi-https.entrypoints=websecure"
+      # - "traefik.http.routers.newapi-https.tls=true"
+      # - "traefik.http.services.newapi.loadbalancer.server.port=3000"
+      # - "traefik.http.routers.newapi-https.middlewares=newapi-stripprefix"
+      # - "traefik.http.middlewares.newapi-stripprefix.stripprefix.prefixes=/newapi"
+
+  # vLLM服务器 - Qwen3-30B模型
+  vllm-server-qwen:
+    image: vllm/vllm-openai:v0.9.1
+    container_name: SLM_19001
+    profiles:
+      - vllm-docker
+    ports:
+      - "19001:19001"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=3
+      - NVIDIA_VISIBLE_DEVICES=3
+      - HF_HOME=/root/.cache/huggingface
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+      # 使用ModelScope镜像源
+      - HF_ENDPOINT=https://hf-mirror.com
+      - MODELSCOPE_CACHE=/root/.cache/modelscope
+      # 禁用一些可能导致GPU检测问题的优化
+      - VLLM_ATTENTION_BACKEND=FLASHINFER
+      - VLLM_USE_TRITON_FLASH_ATTN=0
+      - VLLM_NCCL_SO_PATH=/usr/lib/x86_64-linux-gnu/libnccl.so.2
+      # NCCL配置 - 修复多GPU通信问题（单GPU可能不需要，但保持一致性）
+      - NCCL_DEBUG=INFO
+      - NCCL_IB_DISABLE=1
+      - NCCL_P2P_DISABLE=1
+      - NCCL_SHM_DISABLE=1
+      - NCCL_SOCKET_IFNAME=lo
+    volumes:
+      # 模型缓存目录 - 使用直接模型路径
+      - /home/xkb2/modelscope_models/Qwen/Qwen3-8B:/model
+      # 日志目录
+      - ./logs/vllm-qwen:/app/logs
+      - ./qwen3_nonthinking.jinja:/app/qwen3_nonthinking.jinja
+    command: >
+      --host 0.0.0.0
+      --port 19001
+      --gpu-memory-utilization 0.93
+      --model /model
+      --served-model-name slm
+      --trust-remote-code
+      --chat-template /app/qwen3_nonthinking.jinja
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0', '1', '2', '3', '4', '5', '6', '7']
+              capabilities: [gpu]
+        limits:
+          memory: 32G
+          cpus: '8'
+    shm_size: 8gb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:19001/v1/models"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 300s  # 30B模型加载时间相对较短
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "5"
+    ipc: host  # 对应官方命令的--ipc=host
+    labels:
+      - "traefik.enable=true"
+      # - "traefik.http.routers.slm-https.rule=PathPrefix(`/slm`)"
+      # - "traefik.http.routers.slm-https.entrypoints=websecure"
+      # - "traefik.http.routers.slm-https.tls=true"
+      # - "traefik.http.services.slm.loadbalancer.server.port=19001"
+      # - "traefik.http.routers.slm-https.middlewares=slm-stripprefix"
+      # - "traefik.http.middlewares.slm-stripprefix.stripprefix.prefixes=/slm"
+
+  # vLLM服务器 - Hunyuan-A52B模型 (2卡版本)
+  llm-server-hunyuan:
+    image: vllm/vllm-openai:v0.9.2
+    container_name: LLM_17001
+    profiles:
+      - vllm-docker
+    ports:
+      - "17001:17001"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=4,5
+      - NVIDIA_VISIBLE_DEVICES=4,5
+      # Hugging Face配置
+      - HF_HOME=/root/.cache/huggingface
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+      - HUGGING_FACE_HUB_TOKEN=<secret>
+      # 使用ModelScope镜像源加速
+      - HF_ENDPOINT=https://hf-mirror.com
+      - MODELSCOPE_CACHE=/root/.cache/modelscope
+      - VLLM_USE_V1=0
+      # NCCL配置 - 2卡通信优化
+      - NCCL_DEBUG=INFO
+      - NCCL_IB_DISABLE=1
+      - NCCL_P2P_DISABLE=0  # 2卡间启用P2P
+      - NCCL_SHM_DISABLE=0  # 启用共享内存
+      - NCCL_SOCKET_IFNAME=lo
+    volumes:
+      # 挂载Hunyuan较大版本模型目录
+      - /home/xkb2/modelscope_models/Tencent-Hunyuan/Hunyuan-A13B-Instruct-GPTQ-Int4:/model
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      # 日志目录
+      - ./logs/vllm-hunyuan-2gpu:/app/logs
+    command: >
+      --model /model
+      --host 0.0.0.0
+      --port 17001
+      --gpu-memory-utilization 0.93
+      --served-model-name llm
+      --trust-remote-code
+      --tensor-parallel-size 2
+      --max-model-len 32768
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0', '1', '2', '3', '4', '5', '6', '7']
+              capabilities: [gpu]
+        limits:
+          memory: 48G
+          cpus: '12'
+    shm_size: 16gb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:17001/v1/models"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 360s  # 2卡模型加载时间稍长
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "5"
+    ipc: host
+    labels:
+      - "traefik.enable=true"
+      # - "traefik.http.routers.llm-https.rule=PathPrefix(`/llm`)"
+      # - "traefik.http.routers.llm-https.entrypoints=websecure"
+      # - "traefik.http.routers.llm-https.tls=true"
+      # - "traefik.http.services.llm.loadbalancer.server.port=17001"
+      # - "traefik.http.routers.llm-https.middlewares=llm-stripprefix"
+      # - "traefik.http.middlewares.llm-stripprefix.stripprefix.prefixes=/llm"
+
+    # vLLM服务器 - Qwen2.5-3B Tiny模型
+  tlm-server:
+    image: vllm/vllm-openai:v0.9.2
+    container_name: TLM_16001
+    profiles:
+      - vllm-docker
+    ports:
+      - "16001:16001"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=6
+      - NVIDIA_VISIBLE_DEVICES=6
+      # Hugging Face配置
+      - HF_HOME=/root/.cache/huggingface
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+      # 使用ModelScope镜像源
+      - HF_ENDPOINT=https://hf-mirror.com
+      - MODELSCOPE_CACHE=/root/.cache/modelscope
+      # 优化小模型性能
+      - VLLM_ATTENTION_BACKEND=FLASHINFER
+      - VLLM_USE_TRITON_FLASH_ATTN=1
+    volumes:
+      # 挂载小模型目录
+      - /home/xkb2/modelscope_models/Qwen/Qwen3-0.6B:/model
+      # 日志目录
+      - ./logs/vllm-tiny:/app/logs
+      - ./qwen3_nonthinking.jinja:/app/qwen3_nonthinking.jinja
+    command: >
+      --host 0.0.0.0
+      --port 16001
+      --gpu-memory-utilization 0.8
+      --model /model
+      --served-model-name tlm
+      --trust-remote-code
+      --max-model-len 32768
+      --enable-chunked-prefill
+      --max-num-batched-tokens 8192
+      --max-num-seqs 256
+      --chat-template /app/qwen3_nonthinking.jinja
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0', '1', '2', '3', '4', '5', '6', '7']
+              capabilities: [gpu]
+        limits:
+          memory: 16G
+          cpus: '4'
+    shm_size: 4gb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:16001/v1/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # 小模型加载很快
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    ipc: host
+    labels:
+      - "traefik.enable=true"
+      # - "traefik.http.routers.tlm-https.rule=PathPrefix(`/tlm`)"
+      # - "traefik.http.routers.tlm-https.entrypoints=websecure"
+      # - "traefik.http.routers.tlm-https.tls=true"
+      # - "traefik.http.services.tlm.loadbalancer.server.port=16001"
+      # - "traefik.http.routers.tlm-https.middlewares=tlm-stripprefix"
+      # - "traefik.http.middlewares.tlm-stripprefix.stripprefix.prefixes=/tlm"
+
+  # Xinference 服务器 (embedding + reranker)
+  xinference-service:
+    image: xprobe/xinference:latest
+    container_name: XINFERENCE_9997
+    ports:
+      - "9997:9997" # Xinference 的默认端口
+    environment:
+      - XINFERENCE_HOME=/root/.xinference # Xinference 数据和模型缓存路径
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=0,1
+      - NVIDIA_VISIBLE_DEVICES=0,1
+      # 使用ModelScope镜像源
+      - HF_ENDPOINT=https://hf-mirror.com
+      - MODELSCOPE_CACHE=/root/.cache/modelscope
+      - VLLM_LOGGING_LEVEL=DEBUG
+    volumes:
+      # 挂载宿主机目录，用于存储模型文件，避免每次重启容器都重新下载
+      - ./xinference_data:/root/.xinference
+      # 日志目录
+      - ./logs/xinference:/app/logs
+      # 如果你的模型缓存在 Hugging Face 默认路径，可以挂载这个目录
+      # - ~/.cache/huggingface:/root/.cache/huggingface
+    command: >
+      bash -c "
+        xinference-local --host 0.0.0.0 --port 9997 &
+        XINFERENCE_PID=$$!
+
+        echo 'Waiting for Xinference service to start...'
+        sleep 30
+
+        for i in {1..10}; do
+          if curl -f http://localhost:9997/v1/models 2>/dev/null; then
+            echo 'Xinference service is ready!'
+            break
+          fi
+          echo 'Waiting for Xinference service... attempt' $$i
+          sleep 10
+        done
+
+        echo 'Launching embedding model...'
+        xinference launch --model-name bge-large-zh-v1.5 --model-type embedding --model-uid bge-large-zh-v1.5 --model-engine vllm --replica 4 || echo 'Failed to launch embedding model'
+
+        echo 'Launching reranker model...'
+        xinference launch --model-name bge-reranker-v2-m3 --model-type rerank --model-uid bge-reranker-v2-m3 --replica 4 || echo 'Failed to launch reranker model'
+
+        wait $$XINFERENCE_PID
+      "
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0', '1']
+              capabilities: [gpu]
+        limits:
+          memory: 16G
+          cpus: '4'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9997/v1/models"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 120s  # Xinference需要时间加载模型
+    networks:
+      - ai-services
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      # - "traefik.http.routers.xinference-https.rule=PathPrefix(`/xinference`)"
+      # - "traefik.http.routers.xinference-https.entrypoints=websecure"
+      # - "traefik.http.routers.xinference-https.tls=true"
+      # - "traefik.http.services.xinference.loadbalancer.server.port=9997"
+      # - "traefik.http.routers.xinference-https.middlewares=xinference-stripprefix"
+      # - "traefik.http.middlewares.xinference-stripprefix.stripprefix.prefixes=/xinference"
+      
+
+# 网络配置
+networks:
+  ai-services:
+    driver: bridge
+    name: ai-services
+  milvus-network:
+    driver: bridge
+    name: milvus-network
+  newapi-network:
+    driver: bridge
+    name: newapi-network
+
+# 卷配置
+volumes:
+  mysql_data:
+    external: true
+    name: new-api_mysql_data  # 使用已存在的卷
+  shared-data:
+    driver: local
+    driver_opts:
+      type: bind
+      o: bind
+      device: ./shared-data
+      
+  # 模型缓存目录
+  whisper-models:
+    driver: local
+    driver_opts:
+      type: bind
+      o: bind
+      device: ./models/whisper
+
+  # OCR模型缓存目录
+  olmocr-models:
+    driver: local
+    driver_opts:
+      type: bind
+      o: bind
+      device: ./models/olmocr
+
+  # MySQL数据库数据目录
+  mysql-data:
+    driver: local
+    driver_opts:
+      type: bind
+      o: bind
+      device: ./database/mysql-data
+
+  # Prometheus数据目录
+  prometheus-data:
+    driver: local
+
+  # Grafana数据目录
+  grafana-data:
+    driver: local
+
+  # User服务日志目录
+  user-logs:
+    driver: local
+    driver_opts:
+      type: bind
+      o: bind
+      device: ./user-service/logs 
